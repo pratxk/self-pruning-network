@@ -1,0 +1,25 @@
+{
+  "claim": "At 95% sparsity on Fashion-MNIST with LeNet-300-100, Fisher-OBD pruning retains 88.93% test accuracy versus 89.08% for global magnitude pruning, a paired gain of -0.14 pp (95% CI [-0.29, -0.01]) over 10 seeds.",
+  "target": 0.95,
+  "fisher_obd_acc": 88.93100000000001,
+  "magnitude_acc": 89.075,
+  "delta_pp": -0.1440000000000008,
+  "ci_pp": [
+    -0.2919999999999989,
+    -0.012000000000004203
+  ],
+  "p_perm": 0.08203125,
+  "p_holm": 0.41015625,
+  "n_seeds": 10,
+  "supported": false,
+  "mcnemar_seed0": {
+    "fisher_only_right": 259,
+    "magnitude_only_right": 267,
+    "p": 0.760236282711331
+  },
+  "noise_floor": {
+    "dense_mean": 0.8975200000000001,
+    "dense_std": 0.0015530614926653667,
+    "binomial_se": 0.003032785017108861
+  }
+}
