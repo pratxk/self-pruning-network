@@ -1,0 +1,22 @@
+epoch_s(profiled)=0.853
+adam_step_ms=1.060
+numpy=2.5.4
+
+         344196 function calls (342130 primitive calls) in 0.852 seconds
+
+   Ordered by: internal time
+   List reduced from 133 to 10 due to restriction <10>
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+     2346    0.234    0.000    0.445    0.000 /Users/kgen/Documents/GenAI/self-pruning-network/nn/optim.py:85(_update)
+     2346    0.187    0.000    0.187    0.000 /Users/kgen/Documents/GenAI/self-pruning-network/nn/optim.py:53(_bias)
+     1173    0.056    0.000    0.056    0.000 /Users/kgen/Documents/GenAI/self-pruning-network/engine/ops.py:68(<lambda>)
+     1233    0.035    0.000    0.038    0.000 /Users/kgen/Documents/GenAI/self-pruning-network/engine/ops.py:63(matmul)
+    11339    0.034    0.000    0.037    0.000 /Users/kgen/Documents/GenAI/self-pruning-network/.venv/lib/python3.14/site-packages/numpy/_core/numeric.py:97(zeros_like)
+     6587    0.032    0.000    0.032    0.000 {method 'astype' of 'numpy.ndarray' objects}
+        1    0.032    0.032    0.852    0.852 /Users/kgen/Documents/GenAI/self-pruning-network/train/loop.py:99(fit)
+      391    0.031    0.000    0.051    0.000 /Users/kgen/Documents/GenAI/self-pruning-network/train/loop.py:83(_check_finite)
+     6647    0.029    0.000    0.052    0.000 /Users/kgen/Documents/GenAI/self-pruning-network/engine/tensor.py:60(_accum)
+     1173    0.026    0.000    0.029    0.000 /Users/kgen/Documents/GenAI/self-pruning-network/engine/ops.py:49(<lambda>)
+
+
