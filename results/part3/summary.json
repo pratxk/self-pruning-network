@@ -1,0 +1,11 @@
+{
+  "test_loss": 0.4213461995124817,
+  "test_acc": 0.8931,
+  "val_acc": 0.8974,
+  "train_time_s": 63.5330067089526,
+  "target_sparsity": 0.9,
+  "achieved_sparsity": 0.9,
+  "n_active": 26620,
+  "config_hash": "22a44839bef1",
+  "churn": null
+}
