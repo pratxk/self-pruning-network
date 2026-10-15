@@ -1,0 +1,23 @@
+{
+  "batch_size": 128,
+  "dataset": "fashion_mnist",
+  "dtype": "float32",
+  "epochs": 30,
+  "lr": 0.001,
+  "lr_decay_epoch": 20,
+  "method": "none",
+  "optimizer": "adam",
+  "prune_end_epoch": 20,
+  "prune_every": 100,
+  "prune_start_epoch": 3,
+  "regrow": false,
+  "schedule": "cubic",
+  "seed": 0,
+  "sizes": [
+    784,
+    300,
+    100,
+    10
+  ],
+  "target_sparsity": 0.0
+}
