@@ -10,7 +10,7 @@ import numpy as np
 
 from train import plots
 from train.loop import load_layers, write_csv
-from train.run_sweep import CLAIM_TARGET
+from train.run_sweep import CLAIM_TARGET, CONFIRM_TARGET
 from train.stats import bootstrap_ci, holm, mcnemar_exact, sign_flip_p
 
 plt = plots.plt
@@ -59,6 +59,27 @@ def noise_floor(acc) -> dict:
             "binomial_se": float(np.sqrt(p * (1 - p) / 10_000))}
 
 
+def confirm_claim(acc) -> dict:
+    """Pre-registered rule (README): supported iff 95% CI > 0 AND exact p < 0.05."""
+    a, b = acc.get((CLAIM_METHOD, CONFIRM_TARGET), {}), acc.get((BASELINE, CONFIRM_TARGET), {})
+    seeds = sorted(a.keys() & b.keys())
+    if len(seeds) < 2:
+        return {"supported": None, "reason": "no confirmatory runs yet"}
+    d = 100 * np.array([a[s] - b[s] for s in seeds])
+    lo, hi = bootstrap_ci(d)
+    p = sign_flip_p(d)
+    x, y = 100 * np.mean([a[s] for s in seeds]), 100 * np.mean([b[s] for s in seeds])
+    return {
+        "claim": (f"At {CONFIRM_TARGET:.0%} sparsity, Fisher-OBD retains {x:.2f}% test accuracy "
+                  f"versus {y:.2f}% for global magnitude, a paired gain of {d.mean():+.2f} pp "
+                  f"(95% CI [{lo:+.2f}, {hi:+.2f}], exact p = {p:.4f}) over {len(seeds)} "
+                  f"fresh seeds {seeds[0]}-{seeds[-1]}."),
+        "target": CONFIRM_TARGET, "seeds": seeds, "fisher_obd_acc": x, "magnitude_acc": y,
+        "delta_pp": float(d.mean()), "ci_pp": [lo, hi], "p_perm": p,
+        "fisher_wins": int((d > 0).sum()), "supported": bool(lo > 0 and p < 0.05),
+    }
+
+
 def claim(stats_rows, runs_dir: Path) -> dict:
     row = next((r for r in stats_rows if r["method_a"] == CLAIM_METHOD
                 and r["target"] == CLAIM_TARGET), None)
@@ -87,13 +108,19 @@ def claim(stats_rows, runs_dir: Path) -> dict:
 
 # --- figures ----------------------------------------------------------------
 
-def fig_pareto(acc, path: Path) -> None:
+def fig_pareto(rows, path: Path) -> None:
+    """x = mean ACHIEVED sparsity (can differ from target by up to ~0.4 pp)."""
+    acc = acc_by(rows)
+    achieved = defaultdict(list)
+    for r in rows:
+        achieved[r["method"], float(r["target"])].append(float(r["achieved"]))
     fig, ax = plt.subplots(figsize=(7, 4.5))
     for method in sorted({m for m, _ in acc} - {"dense"}):
         ts = sorted(t for m, t in acc if m == method)
         mean = [100 * np.mean(list(acc[method, t].values())) for t in ts]
         std = [100 * np.std(list(acc[method, t].values())) for t in ts]
-        ax.errorbar([1 - t for t in ts], mean, yerr=std, marker="o", capsize=3, label=method)
+        x = [1 - np.mean(achieved[method, t]) for t in ts]
+        ax.errorbar(x, mean, yerr=std, marker="o", capsize=3, label=method)
     if ("dense", 0.0) in acc:
         ax.axhline(100 * np.mean(list(acc["dense", 0.0].values())), color="k", ls="--",
                    lw=1, label="dense")
@@ -181,7 +208,8 @@ def main(argv=None) -> None:
     if not (sweep_dir / "sweep.csv").exists():
         print(f"no {sweep_dir}/sweep.csv yet: only Part 2/3 figures written")
         return
-    acc = acc_by(read_csv(sweep_dir / "sweep.csv"))
+    sweep_rows = read_csv(sweep_dir / "sweep.csv")
+    acc = acc_by(sweep_rows)
     targets = sorted({t for _, t in acc if t > 0})
     stats_rows = paired_stats(acc, targets)
     if stats_rows:
@@ -190,11 +218,17 @@ def main(argv=None) -> None:
     (sweep_dir / "claim.json").write_text(json.dumps(result, indent=2))
     print(json.dumps(result, indent=2))
 
-    fig_pareto(acc, figs / "pareto.png")
+    fig_pareto(sweep_rows, figs / "pareto.png")
     fig_layer_density(sweep_dir / "runs", figs / "layer_density.png")
     if (sweep_dir / "bench.csv").exists():
         fig_latency(read_csv(sweep_dir / "bench.csv"), figs / "latency_vs_sparsity.png")
     print(f"figures -> {figs}")
+
+    confirm_dir = Path("results/part4_confirm")
+    if (confirm_dir / "sweep.csv").exists():
+        result = confirm_claim(acc_by(read_csv(confirm_dir / "sweep.csv")))
+        (confirm_dir / "claim.json").write_text(json.dumps(result, indent=2))
+        print(json.dumps(result, indent=2))
 
 
 if __name__ == "__main__":

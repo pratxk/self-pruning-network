@@ -44,6 +44,19 @@ over magnitude. Layerwise magnitude is better still there (+0.67 pp,
 CI [0.56, 0.79]). With 5 seeds the exact permutation p cannot go below 0.0625,
 so these gaps rest on the CI.
 
+## Confirmatory claim (pre-registered before its runs)
+
+The 99% gap above was found by looking at the sweep, so it cannot count as
+evidence for itself. It is re-tested on **10 fresh seeds (5–14)** that the
+sweep never used at 99%, with the rule fixed here first:
+
+> At 99% sparsity, Fisher-OBD retains more test accuracy than global magnitude
+> pruning: a paired gain whose 95% bootstrap CI excludes 0 **and** whose exact
+> sign-flip p < 0.05, over seeds 5–14.
+
+`uv run python -m train.run_sweep --confirm --jobs 6` (20 runs, ~5 min) then
+`uv run python -m train.run_report` writes `results/part4_confirm/claim.json`.
+
 ## Install
 
 ```bash

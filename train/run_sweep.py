@@ -21,6 +21,11 @@ QUICK_TARGETS = (0.9, 0.95, 0.98)
 CLAIM_TARGET = 0.95
 SEEDS = range(5)
 CLAIM_SEEDS = range(10)  # 5 seeds cannot reach p < 0.05 (see train/stats.py)
+# Confirmatory test of the 99% gap seen in the exploratory sweep, on fresh seeds
+# (the sweep used 0-4 at 99%), pre-registered in README before running.
+CONFIRM_TARGET = 0.99
+CONFIRM_METHODS = ("magnitude", "fisher_obd")
+CONFIRM_SEEDS = range(5, 15)
 # label -> config overrides
 METHODS = {
     "magnitude": dict(method="magnitude"),
@@ -35,7 +40,10 @@ COLUMNS = ["seed", "method", "schedule", "regrow", "target", "achieved", "n_acti
            "val_acc", "test_acc", "train_time_s", "churn", "config_hash"]
 
 
-def grid(quick: bool) -> list[tuple[str, RunConfig]]:
+def grid(quick: bool, confirm: bool = False) -> list[tuple[str, RunConfig]]:
+    if confirm:
+        return [(l, RunConfig(seed=s, target_sparsity=CONFIRM_TARGET, **METHODS[l]))
+                for l in CONFIRM_METHODS for s in CONFIRM_SEEDS]
     seeds, targets = (range(1), QUICK_TARGETS) if quick else (SEEDS, TARGETS)
     jobs = [("dense", RunConfig(seed=s)) for s in seeds]
     for t in targets:
@@ -75,9 +83,12 @@ def main(argv=None) -> None:
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--quick", action="store_true")
     ap.add_argument("--jobs", type=int, default=1)
+    ap.add_argument("--confirm", action="store_true",
+                    help="confirmatory 99%% claim: fresh seeds 5-14 -> results/part4_confirm")
     ap.add_argument("--out", default=None)
     args = ap.parse_args(argv)
-    out = Path(args.out or ("results/part4_quick" if args.quick else "results/part4"))
+    out = Path(args.out or ("results/part4_quick" if args.quick else
+                            "results/part4_confirm" if args.confirm else "results/part4"))
     out.mkdir(parents=True, exist_ok=True)
     sweep_csv = out / "sweep.csv"
 
@@ -86,7 +97,7 @@ def main(argv=None) -> None:
         with sweep_csv.open() as f:
             done = {_key(r["seed"], r["method"], r["target"], r["config_hash"])
                     for r in csv.DictReader(f)}
-    todo = [(l, c) for l, c in grid(args.quick)
+    todo = [(l, c) for l, c in grid(args.quick, args.confirm)
             if _key(c.seed, l, c.target_sparsity, c.hash()) not in done]
     print(f"{len(done)} runs done, {len(todo)} to go -> {sweep_csv}")
     load_fashion_mnist()  # download once before workers start
