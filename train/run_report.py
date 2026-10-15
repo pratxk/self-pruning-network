@@ -133,6 +133,7 @@ def fig_layer_density(runs_dir: Path, path: Path) -> None:
     for model in sorted(runs_dir.glob(f"*/t{CLAIM_TARGET}/seed0/model.npz")):
         dens = [m.mean() for *_, m in load_layers(model)]
         ax.plot(range(1, len(dens) + 1), dens, marker="o", label=model.parts[-4])
+    ax.set_xticks([1, 2, 3], ["784→300", "300→100", "100→10"])
     ax.set(xlabel="layer", ylabel="density", yscale="log",
            title=f"Per-layer density at {CLAIM_TARGET:.0%} sparsity (seed 0)")
     ax.grid(alpha=0.3, which="both")
