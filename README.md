@@ -11,7 +11,10 @@ fresh Adam parameters.
 90% sparsity** and **88.40% at 98%**, against 89.75% dense (mean of 5 seeds,
 `results/part4/sweep.csv`). It does **not** beat global magnitude pruning: the
 pre-registered claim below is **not supported**. Fisher-OBD and magnitude tie at
-every sparsity up to 98%; Fisher-OBD leads only at 99% (+0.34 pp). What it does
+every sparsity up to 98%; Fisher-OBD leads only at 99% (+0.34 pp; a confirmatory
+re-test on 10 fresh seeds gave +0.29 pp, p = 0.055, just short of its
+pre-registered bar). What the results do support: **gradual pruning beats one-shot
+by 14.7 pp at 99%**, on every seed. What Fisher-OBD does
 buy is structure: it removes whole hidden units, so the compacted model is
 **1.6× faster at 98% sparsity, 2.1× at 99%**, where magnitude's is not
 (`results/part4/bench.csv`).
@@ -57,12 +60,38 @@ sweep never used at 99%, with the rule fixed here first:
 `uv run python -m train.run_sweep --confirm --jobs 6` (20 runs, ~5 min) then
 `uv run python -m train.run_report` writes `results/part4_confirm/claim.json`.
 
+**Outcome (`results/part4_confirm/claim.json`): not supported, narrowly.**
+Fisher-OBD 87.09% vs magnitude 86.79%, a paired gain of **+0.29 pp**
+(95% CI [+0.06, +0.55]), better on 8 of 10 seeds, but exact sign-flip
+p = 0.055. The CI half of the rule passes; the p < 0.05 half misses by 0.005.
+The direction replicates on fresh seeds, but it does not clear the bar set in
+advance, so it is not claimed. No further seeds were added after seeing this.
+
+## The claim the results support
+
+> At 99% sparsity, gradual (cubic-schedule) magnitude pruning retains
+> **86.80%** test accuracy versus **72.12%** for the same criterion applied
+> one-shot at epoch 20: a paired gain of **14.68 pp** (95% CI [13.26, 16.41])
+> over 5 seeds, and at least **12.6 pp on every seed**.
+
+That is about 40× the test-set noise floor (0.30 pp). The one-shot run was
+planned in the spec as the schedule ablation; this claim was picked after
+the sweep. It is backed by `results/part4/stats.csv` (row
+`0.99,magnitude_oneshot`) and per-seed rows in `results/part4/sweep.csv`. At
+95% the same gap is 2.76 pp (CI [2.65, 2.84]). With 5 seeds the exact
+permutation p cannot go below 0.0625; every seed agreeing is the stronger
+evidence here.
+
 ## Install
 
 ```bash
 uv sync                          # Python >= 3.12, deps pinned in uv.lock
 # fallback: pip install -r requirements.txt pytest
 ```
+
+The lock pins Python >= 3.12 so numbers reproduce bit for bit. The code itself
+also runs on Python 3.10 (tested: 81 passed with NumPy 2.2), but numbers from a
+different NumPy may differ in the last digits.
 
 ## Commands
 
@@ -75,6 +104,7 @@ uv sync                          # Python >= 3.12, deps pinned in uv.lock
 | Part 3 self-pruning run | `uv run python -m train.run_prune --method fisher_obd --sparsity 0.90 --seed 0` | ~1 min | `results/part3/` |
 | Profile (DESIGN §3) | `uv run python -m train.run_profile` | < 30 s | `results/profile/` |
 | Part 4 Pareto sweep | `uv run python -m train.run_sweep [--jobs N]` | ~1 h at `--jobs 6`, ~4 h at 1 | `results/part4/` |
+| Part 4 confirmatory 99% claim | `uv run python -m train.run_sweep --confirm --jobs 6` | ~5 min | `results/part4_confirm/` |
 | Part 4 quick check | `uv run python -m train.run_sweep --quick` | ~20 min | `results/part4_quick/` |
 | Cost benchmark (needs the sweep's seed-0 models; `*.npz` is git-ignored) | `uv run python -m train.run_bench` | ~5 min | `results/part4/bench.csv` |
 | Stats + plots | `uv run python -m train.run_report` | < 1 min | `claim.json`, `results/figures/` |
