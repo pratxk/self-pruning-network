@@ -1,0 +1,7 @@
+data/
+.venv/
+__pycache__/
+.pytest_cache/
+*.npz
+results/part4_quick/
+.DS_Store
