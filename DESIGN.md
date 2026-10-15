@@ -33,7 +33,9 @@ loss around the current weights:
   linearly extrapolates the loss over a step of the full size `|w_i|`. That is
   not a small step. The term is most negative exactly where Adam is already
   shrinking a large weight, so it ranks those weights for removal first.
-  Measured: `fisher_obd_fo` vs `fisher_obd` in `results/part4*/sweep.csv`.
+  Measured over 5 seeds (`results/part4/stats.csv`): `fisher_obd_fo` loses
+  1.6 pp to magnitude at 50% sparsity and 5.8 pp at 95%. `fisher_obd` ties
+  magnitude (−0.14 pp at 95%, CI [−0.29, −0.01], 10 seeds).
 
 **Caveats.**
 1. **`v̂` is a mini-batch Fisher, biased low by ≈B.** Adam's `v` averages
@@ -50,13 +52,20 @@ loss around the current weights:
 3. The expansion is local: valid for small `δ`. A large weight's removal is not
    small, which is another reason to prune gradually.
 
-**Why it should rank across layers better than magnitude.** Magnitude assumes
+**Why it was expected to beat magnitude, and what happened.** Magnitude assumes
 every weight has the same curvature. Layers are initialised at different scales
 (He: `std = √(2/fan_in)`), so raw `|w|` is not comparable across layers. That
 forces magnitude pruning into per-layer quotas (our `magnitude_layer`
 ablation). `s_i` is in units of loss, so a global threshold is meaningful.
 Example: a large weight on a border pixel of Fashion-MNIST that is almost
 always 0 has tiny `v̂` and costs nothing to remove.
+
+The experiment says the difference does not matter for accuracy on this
+model: the pre-registered claim at 95% is **not supported** (README). Fisher-OBD
+does allocate differently. At 95% it keeps 60.7% of the output layer vs 45.2%
+for magnitude, and empties more hidden units. That gives no accuracy gain but
+a real compaction speedup (section 4). A gap in its favour appears only at 99%
+(+0.34 pp, CI [0.19, 0.49]).
 
 References: LeCun et al. 1990 (OBD); Molchanov et al. 2017/2019 (Taylor
 importance); Zhu & Gupta 2017 (cubic schedule); Evci et al. 2020 (RigL).
@@ -148,10 +157,12 @@ read the same table.
 and cost tier. Get speed from structure, batching and quantization, not from
 unstructured zeros.
 
-- **Unstructured sparsity rarely speeds up GPUs or vectorized CPUs.**
-  `results/part4/bench.csv` shows where CSR crosses over dense BLAS on this
-  machine. Ship the compacted model (dead units removed: real, smaller dense
-  matrices). Or retrain with structured sparsity (neuron or block, or 2:4 for
+- **Unstructured sparsity rarely speeds up GPUs or vectorized CPUs.** Measured
+  here (`results/part4/bench.csv`): at 99% sparsity FLOPs fall about 100×, yet
+  our CSR path is 5× *slower* than dense BLAS at batch 256 (0.80 vs 0.148 ms)
+  and never crosses over. Ship the compacted model instead: dead units removed,
+  real smaller dense matrices, 1.6× faster at 98% and 2.1× at 99% for
+  Fisher-OBD. Or retrain with structured sparsity (neuron or block, or 2:4 for
   sparse tensor cores) using the same saliency summed per group.
 - **Export a frozen artifact:** weights plus CSR or compacted format, version,
   and accuracy report. Never apply masks at request time: per-request masks
