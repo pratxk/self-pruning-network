@@ -95,6 +95,10 @@ different NumPy may differ in the last digits.
 
 ## Commands
 
+Short forms live in the `Makefile` (`make help` lists them): `make test`,
+`make train`, `make prune`, `make eval` (score saved models without
+retraining), `make demo` (gradcheck + prune + eval, ~1 min).
+
 | Purpose | Command | Runtime (est.) | Writes |
 | --- | --- | --- | --- |
 | Install | `uv sync` | 1 min | `.venv/` |
