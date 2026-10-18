@@ -1,4 +1,8 @@
 # Short names for the long commands. `make help` lists them.
+METHOD ?= fisher_obd
+SPARSITY ?= 0.90
+OUT ?= results/part3
+
 .PHONY: help install test gradcheck train prune eval demo profile sweep quick confirm bench report
 
 help:
@@ -7,6 +11,7 @@ help:
 	@echo "make gradcheck  gradient checks on every engine op (<30 s)"
 	@echo "make train      Part 2: train the full network, seed 0 (~1 min)"
 	@echo "make prune      Part 3: train while pruning to 90%, seed 0 (~1 min)"
+	@echo "                options: make prune METHOD=magnitude SPARSITY=0.95 OUT=results/try"
 	@echo "make eval       score the saved Part 2 and Part 3 models on the test set (<5 s)"
 	@echo "make demo       gradcheck + prune + eval: the interview demo (~2 min)"
 	@echo "make profile    time the training loop"
@@ -29,7 +34,7 @@ train:
 	uv run python -m train.run_dense --seed 0
 
 prune:
-	uv run python -m train.run_prune --method fisher_obd --sparsity 0.90 --seed 0
+	uv run python -m train.run_prune --method $(METHOD) --sparsity $(SPARSITY) --seed 0 --out $(OUT)
 
 eval:
 	uv run python -m train.run_eval
