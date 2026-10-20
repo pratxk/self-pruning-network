@@ -114,7 +114,9 @@ retraining), `make demo` (gradcheck + prune + eval, ~1 min).
 | Stats + plots | `uv run python -m train.run_report` | < 1 min | `claim.json`, `results/figures/` |
 
 The dataset downloads on first run to `data/` (git-ignored) and is verified by
-SHA-256. Quick mode writes to its own folder, so it never overwrites committed
+SHA-256. If OpenML is unavailable it falls back to Zalando's original files
+(identical bytes, same checksum). Trained models (`*.npz`) are not committed:
+run `make train` / `make prune` before `make eval`. Quick mode writes to its own folder, so it never overwrites committed
 numbers.
 
 ## Results

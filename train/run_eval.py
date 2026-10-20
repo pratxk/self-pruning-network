@@ -1,6 +1,7 @@
 """Score saved models on the test set without retraining.
 uv run python -m train.run_eval [model.npz ...]"""
 import argparse
+from pathlib import Path
 
 import numpy as np
 
@@ -25,6 +26,9 @@ def main(argv=None) -> None:
     args = ap.parse_args(argv)
     d = load_fashion_mnist()
     for path in args.models:
+        if not Path(path).exists():
+            print(f"{path}: not found (models aren't committed; run `make train` / `make prune` first)")
+            continue
         layers = load_layers(path)
         active = sum(int(m.sum()) for _, _, m in layers)
         total = sum(m.size for _, _, m in layers)

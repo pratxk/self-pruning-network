@@ -28,16 +28,40 @@ def _checksum(X: np.ndarray, y: np.ndarray) -> str:
     return h.hexdigest()
 
 
+ZALANDO = "https://raw.githubusercontent.com/zalandoresearch/fashion-mnist/master/data/fashion/"
+
+
+def _download_zalando() -> tuple[np.ndarray, np.ndarray]:
+    """Fallback: the original idx files. Same 70k images in the same order as OpenML
+    (60k train then 10k test); load_raw's SHA-256 check confirms it."""
+    import gzip
+    import urllib.request
+
+    def read(name: str, offset: int) -> np.ndarray:
+        with urllib.request.urlopen(ZALANDO + name, timeout=120) as r:
+            return np.frombuffer(gzip.decompress(r.read()), np.uint8, offset=offset)
+
+    X = np.concatenate([read("train-images-idx3-ubyte.gz", 16),
+                        read("t10k-images-idx3-ubyte.gz", 16)]).reshape(-1, 784)
+    y = np.concatenate([read("train-labels-idx1-ubyte.gz", 8),
+                        read("t10k-labels-idx1-ubyte.gz", 8)])
+    return X, y
+
+
 def _download(cache: Path) -> tuple[np.ndarray, np.ndarray]:
     from sklearn.datasets import fetch_openml
 
     try:
         X, y = fetch_openml("Fashion-MNIST", version=1, as_frame=False, return_X_y=True,
                             data_home=str(cache.parent / "openml"), parser="liac-arff")
-    except Exception as e:  # network / openml outage
-        raise RuntimeError(
-            "Could not download Fashion-MNIST from OpenML. Download it manually from "
-            "https://www.openml.org/d/40996 or retry later.") from e
+    except Exception as openml_err:  # network / openml outage
+        print(f"OpenML download failed ({type(openml_err).__name__}); trying the Zalando mirror")
+        try:
+            X, y = _download_zalando()
+        except Exception as e:
+            raise RuntimeError(
+                "Could not download Fashion-MNIST from OpenML or the Zalando mirror. "
+                "Download it manually from https://www.openml.org/d/40996 or retry later.") from e
     X, y = X.astype(np.uint8), y.astype(np.int64)
     cache.parent.mkdir(parents=True, exist_ok=True)
     np.savez_compressed(cache, X=X, y=y)
